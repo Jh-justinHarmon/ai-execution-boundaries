@@ -143,6 +143,31 @@ A minimal validation primitive for AI agent execution.
 
 ---
 
+## Why Not OPA / Existing Policy Engines?
+
+**OPA, Envoy filters, and Kubernetes admission controllers are excellent for infrastructure policy enforcement.**
+
+This library addresses a different layer: **agent tool call semantics**.
+
+**Key differences:**
+
+| Concern | OPA/Envoy | Execution Boundaries |
+|---------|-----------|---------------------|
+| **Policy target** | HTTP requests, K8s resources | Agent tool calls, function invocations |
+| **Integration point** | Network layer, API gateway | Python decorator, function wrapper |
+| **Policy language** | Rego, external DSL | Python policy objects |
+| **Deployment** | Sidecar, admission webhook | Inline, same process |
+| **Async support** | Yes | Not yet (roadmap) |
+| **Agent-aware** | No | Yes (designed for LLM tool calls) |
+
+**Use OPA when:** You need infrastructure-wide policy enforcement across services, languages, and protocols.
+
+**Use execution boundaries when:** You need lightweight, inline validation for Python agent tool calls without external policy servers.
+
+**Future:** Integration with OPA as a policy backend is planned.
+
+---
+
 ## License
 
 Apache 2.0
