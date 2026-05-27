@@ -1,0 +1,206 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://github.com/Jh-justinHarmon/ai-execution-boundaries",
+  "elements": [
+    {
+      "type": "rectangle",
+      "id": "runtime-container",
+      "x": 50,
+      "y": 50,
+      "width": 700,
+      "height": 100,
+      "strokeColor": "#666666",
+      "backgroundColor": "#f5f5f5",
+      "strokeWidth": 1,
+      "label": {
+        "text": "LLM Agent Runtime",
+        "fontSize": 16,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "tool-call",
+      "x": 300,
+      "y": 95,
+      "width": 200,
+      "height": 40,
+      "strokeColor": "#333333",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "Tool Call Request",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "boundary-container",
+      "x": 50,
+      "y": 200,
+      "width": 700,
+      "height": 200,
+      "strokeColor": "#2e7d32",
+      "backgroundColor": "#e8f5e9",
+      "strokeWidth": 3,
+      "label": {
+        "text": "Execution Boundary",
+        "fontSize": 16,
+        "fontFamily": 1,
+        "fontWeight": 600
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "policy-eval",
+      "x": 150,
+      "y": 260,
+      "width": 180,
+      "height": 40,
+      "strokeColor": "#333333",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "Policy Evaluation",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "diamond",
+      "id": "decision",
+      "x": 400,
+      "y": 280,
+      "width": 60,
+      "height": 40,
+      "strokeColor": "#2e7d32",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "Decision",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "audit-logger",
+      "x": 520,
+      "y": 260,
+      "width": 150,
+      "height": 40,
+      "strokeColor": "#333333",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "Audit Logger",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "data-container",
+      "x": 50,
+      "y": 450,
+      "width": 700,
+      "height": 100,
+      "strokeColor": "#666666",
+      "backgroundColor": "#f5f5f5",
+      "strokeWidth": 1,
+      "label": {
+        "text": "Data Plane",
+        "fontSize": 16,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "db-execute",
+      "x": 150,
+      "y": 495,
+      "width": 180,
+      "height": 40,
+      "strokeColor": "#333333",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "Database Execute",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "boundary-violation",
+      "x": 470,
+      "y": 495,
+      "width": 200,
+      "height": 40,
+      "strokeColor": "#333333",
+      "backgroundColor": "#ffffff",
+      "strokeWidth": 2,
+      "label": {
+        "text": "BoundaryViolation",
+        "fontSize": 14,
+        "fontFamily": 1
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-1",
+      "startBinding": { "elementId": "tool-call" },
+      "endBinding": { "elementId": "policy-eval" },
+      "strokeColor": "#666666",
+      "strokeWidth": 2,
+      "label": { "text": "invoke" }
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-2",
+      "startBinding": { "elementId": "policy-eval" },
+      "endBinding": { "elementId": "decision" },
+      "strokeColor": "#666666",
+      "strokeWidth": 2
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-allow",
+      "startBinding": { "elementId": "decision" },
+      "endBinding": { "elementId": "audit-logger" },
+      "strokeColor": "#2e7d32",
+      "strokeWidth": 2,
+      "label": { "text": "ALLOW" }
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-deny",
+      "startBinding": { "elementId": "decision" },
+      "endBinding": { "elementId": "boundary-violation" },
+      "strokeColor": "#c62828",
+      "strokeWidth": 2,
+      "label": { "text": "DENY" }
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-3",
+      "startBinding": { "elementId": "audit-logger" },
+      "endBinding": { "elementId": "db-execute" },
+      "strokeColor": "#666666",
+      "strokeWidth": 2
+    },
+    {
+      "type": "arrow",
+      "id": "arrow-4",
+      "startBinding": { "elementId": "boundary-violation" },
+      "endBinding": { "elementId": "audit-logger" },
+      "strokeColor": "#666666",
+      "strokeWidth": 2
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  }
+}

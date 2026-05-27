@@ -1,0 +1,27 @@
+graph TB
+    subgraph agent["LLM Agent Runtime"]
+        A[Tool Call Request]
+    end
+    
+    subgraph boundary["Execution Boundary"]
+        B[Policy Evaluation]
+        C{Decision}
+        D[Audit Logger]
+    end
+    
+    subgraph data["Data Plane"]
+        E[Database Execute]
+        F[BoundaryViolation]
+    end
+    
+    A -->|invoke| B
+    B --> C
+    C -->|ALLOW| D
+    C -->|DENY| F
+    D --> E
+    F --> D
+    
+    style boundary fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style agent fill:#f5f5f5,stroke:#666,stroke-width:1px
+    style data fill:#f5f5f5,stroke:#666,stroke-width:1px
+    style C fill:#fff,stroke:#2e7d32,stroke-width:2px

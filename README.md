@@ -22,9 +22,16 @@ This happens in production. Repeatedly.
 
 ## The Solution
 
-![Execution Boundary Comparison](docs/execution-boundary-comparison.png)
+![Execution Boundary Topology](docs/execution-boundary-topology.svg)
 
 **Execution boundaries validate before execution.**
+
+**Flow:**
+1. Agent invokes tool call
+2. Execution boundary evaluates policy
+3. Decision: ALLOW or DENY
+4. Audit logger records attempt
+5. Database executes (if allowed) or raises BoundaryViolation (if denied)
 
 ```python
 from execution_boundary import boundary, Policy
