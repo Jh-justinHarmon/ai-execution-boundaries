@@ -1,7 +1,7 @@
 """LangGraph integration example with async execution boundaries."""
 
 import asyncio
-from typing import TypedDict, Annotated
+from typing import TypedDict, Annotated, Optional, List
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 
@@ -15,9 +15,9 @@ from execution_boundary import (
 
 # Define agent state
 class AgentState(TypedDict):
-    messages: list[str]
+    messages: List[str]
     invoice_status: str
-    error: str | None
+    error: str  # Will be empty string instead of None for Python 3.9 compatibility
 
 
 # Simulated database
