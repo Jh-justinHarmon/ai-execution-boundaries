@@ -51,7 +51,13 @@ def update_record(data):
 ## Installation
 
 ```bash
-pip install execution-boundary
+# From source
+git clone https://github.com/Jh-justinHarmon/ai-execution-boundaries
+cd ai-execution-boundaries
+pip install -e .
+
+# With development dependencies
+pip install -e ".[dev]"
 ```
 
 Or clone and install locally:
