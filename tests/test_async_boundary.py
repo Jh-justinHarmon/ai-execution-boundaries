@@ -6,50 +6,57 @@ from execution_boundary import (
     async_boundary,
     BoundaryViolation,
     PolicyFactory,
+    InMemoryBackend,
     SQLiteBackend,
-    StdoutBackend,
-    AuditEvent
+    StdoutBackend
 )
 
 
 @pytest.mark.asyncio
 async def test_async_boundary_allows_valid_request():
     """Test that valid requests are allowed."""
+    backend = InMemoryBackend()
     policy = PolicyFactory.exact_match("status", "pending")
     
-    @async_boundary(policy=policy, audit_backend=StdoutBackend())
+    @async_boundary(policy=policy, audit_backend=backend)
     async def update_record(data):
         return {"success": True, "data": data}
     
     result = await update_record({"status": "pending", "id": 1})
     assert result["success"] is True
     assert result["data"]["status"] == "pending"
+    assert len(backend.records) == 1
+    assert backend.records[0].decision.is_allowed
 
 
 @pytest.mark.asyncio
 async def test_async_boundary_blocks_invalid_request():
     """Test that invalid requests are blocked."""
+    backend = InMemoryBackend()
     policy = PolicyFactory.exact_match("status", "pending")
     
-    @async_boundary(policy=policy, audit_backend=StdoutBackend())
+    @async_boundary(policy=policy, audit_backend=backend)
     async def update_record(data):
         return {"success": True, "data": data}
     
     with pytest.raises(BoundaryViolation) as exc_info:
         await update_record({"status": "approved", "id": 1})
     
-    assert "blocked execution" in str(exc_info.value)
-    assert exc_info.value.audit_event.decision == "DENIED"
+    assert "BoundaryViolation" in str(exc_info.value)
+    assert exc_info.value.decision.is_denied
+    assert len(backend.records) == 1
+    assert backend.records[0].decision.is_denied
 
 
 @pytest.mark.asyncio
 async def test_policy_composition_and():
     """Test AND policy composition."""
+    backend = InMemoryBackend()
     status_policy = PolicyFactory.exact_match("status", "pending")
     amount_policy = PolicyFactory.range_check("amount", max_val=1000)
     combined = status_policy & amount_policy
     
-    @async_boundary(policy=combined, audit_backend=StdoutBackend())
+    @async_boundary(policy=combined, audit_backend=backend)
     async def update_record(data):
         return {"success": True}
     
@@ -138,18 +145,20 @@ async def test_sqlite_audit_backend(tmp_path):
 
 @pytest.mark.asyncio
 async def test_trace_correlation():
-    """Test that trace IDs are preserved."""
+    """Test that correlation IDs are preserved."""
+    backend = InMemoryBackend()
     policy = PolicyFactory.exact_match("status", "pending")
-    trace_id = "test-trace-123"
+    correlation_id = "test-corr-123"
     
-    @async_boundary(policy=policy, audit_backend=StdoutBackend(), trace_id=trace_id)
+    @async_boundary(policy=policy, audit_backend=backend, correlation_id=correlation_id)
     async def update_record(data):
         return {"success": True}
     
     try:
         await update_record({"status": "approved"})
     except BoundaryViolation as e:
-        assert e.audit_event.trace_id == trace_id
+        assert e.correlation_id == correlation_id
+        assert e.context.correlation_id == correlation_id
 
 
 @pytest.mark.asyncio

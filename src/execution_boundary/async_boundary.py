@@ -2,89 +2,10 @@
 
 import asyncio
 import functools
-from datetime import datetime
 from typing import Callable, Any, Optional
-from dataclasses import dataclass, asdict
-import uuid
 
-
-@dataclass
-class AuditEvent:
-    """Structured audit event."""
-    event_type: str
-    tool: str
-    decision: str
-    policy: str
-    timestamp: str
-    trace_id: str
-    args: dict
-    error: Optional[str] = None
-    
-    def to_dict(self):
-        return asdict(self)
-
-
-class BoundaryViolation(Exception):
-    """Raised when execution boundary blocks an action."""
-    def __init__(self, message: str, audit_event: AuditEvent):
-        super().__init__(message)
-        self.audit_event = audit_event
-
-
-class AuditBackend:
-    """Base audit backend."""
-    def log(self, event: AuditEvent) -> None:
-        raise NotImplementedError
-
-
-class SQLiteBackend(AuditBackend):
-    """SQLite audit backend."""
-    def __init__(self, db_path: str = "audit.db"):
-        import sqlite3
-        self.db_path = db_path
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self._init_db()
-    
-    def _init_db(self):
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS audit_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_type TEXT NOT NULL,
-                tool TEXT NOT NULL,
-                decision TEXT NOT NULL,
-                policy TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                trace_id TEXT NOT NULL,
-                args TEXT NOT NULL,
-                error TEXT
-            )
-        """)
-        self.conn.commit()
-    
-    def log(self, event: AuditEvent) -> None:
-        import json
-        self.conn.execute("""
-            INSERT INTO audit_events 
-            (event_type, tool, decision, policy, timestamp, trace_id, args, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            event.event_type,
-            event.tool,
-            event.decision,
-            event.policy,
-            event.timestamp,
-            event.trace_id,
-            json.dumps(event.args),
-            event.error
-        ))
-        self.conn.commit()
-
-
-class StdoutBackend(AuditBackend):
-    """Stdout audit backend."""
-    def log(self, event: AuditEvent) -> None:
-        import json
-        print(f"[AUDIT] {json.dumps(event.to_dict())}")
+from .core import ExecutionContext, PolicyDecision, BoundaryViolation
+from .audit import NullBackend
 
 
 class ComposablePolicy:
@@ -121,16 +42,18 @@ class ComposablePolicy:
 
 def async_boundary(
     policy: ComposablePolicy,
-    audit_backend: Optional[AuditBackend] = None,
-    trace_id: Optional[str] = None
+    audit_backend: Optional[Any] = None,
+    correlation_id: Optional[str] = None,
+    parent_execution_id: Optional[str] = None
 ):
     """
     Async execution boundary decorator.
     
     Args:
         policy: ComposablePolicy with validate() method
-        audit_backend: Backend for audit logging (default: StdoutBackend)
-        trace_id: Optional trace ID for correlation
+        audit_backend: Backend for audit logging (default: NullBackend)
+        correlation_id: Optional correlation ID for tracing
+        parent_execution_id: Optional parent execution ID for nested calls
     
     Returns:
         Decorated async function that validates before executing
@@ -139,37 +62,42 @@ def async_boundary(
         BoundaryViolation: When policy validation fails
     """
     if audit_backend is None:
-        audit_backend = StdoutBackend()
+        audit_backend = NullBackend()
     
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            current_trace_id = trace_id or str(uuid.uuid4())
+            # Create execution context
+            context = ExecutionContext.create(
+                tool_name=func.__name__,
+                correlation_id=correlation_id,
+                parent_execution_id=parent_execution_id,
+                metadata={"args": str(args), "kwargs": str(kwargs)}
+            )
             
             # Validate against policy
             is_valid = await policy.validate(*args, **kwargs)
             
-            # Create audit event
-            event = AuditEvent(
-                event_type="boundary_decision",
-                tool=func.__name__,
-                decision="ALLOWED" if is_valid else "DENIED",
-                policy=policy.name,
-                timestamp=datetime.utcnow().isoformat(),
-                trace_id=current_trace_id,
-                args={"args": str(args), "kwargs": str(kwargs)},
-                error=None if is_valid else "Policy validation failed"
-            )
+            # Create policy decision
+            if is_valid:
+                decision = PolicyDecision.allow(
+                    policy_name=policy.name,
+                    correlation_id=context.correlation_id,
+                    reason="Policy evaluation passed"
+                )
+            else:
+                decision = PolicyDecision.deny(
+                    policy_name=policy.name,
+                    correlation_id=context.correlation_id,
+                    reason="Policy validation failed"
+                )
             
-            # Log audit event
-            audit_backend.log(event)
+            # Record audit event
+            await audit_backend.record(context, decision)
             
             # Block if invalid
             if not is_valid:
-                raise BoundaryViolation(
-                    f"Policy '{policy.name}' blocked execution of {func.__name__}",
-                    audit_event=event
-                )
+                raise BoundaryViolation(context=context, decision=decision)
             
             # Execute if valid
             return await func(*args, **kwargs)

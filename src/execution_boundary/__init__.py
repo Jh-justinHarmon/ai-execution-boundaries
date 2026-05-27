@@ -1,6 +1,7 @@
 """Execution boundaries for AI agents with write access."""
 
-from .boundary import boundary, Policy
+from .boundary import boundary
+from .policy import Policy
 from .async_boundary import async_boundary, ComposablePolicy, PolicyFactory
 
 # Core primitives

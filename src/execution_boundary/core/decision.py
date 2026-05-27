@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ class PolicyDecision:
         policy_name: str,
         correlation_id: str,
         reason: str = "Policy evaluation passed",
-        metadata: dict[str, Any] | None = None
+        metadata: Optional[dict[str, Any]] = None
     ) -> "PolicyDecision":
         """Create an ALLOW decision."""
         return cls(
@@ -58,7 +58,7 @@ class PolicyDecision:
         policy_name: str,
         correlation_id: str,
         reason: str,
-        metadata: dict[str, Any] | None = None
+        metadata: Optional[dict[str, Any]] = None
     ) -> "PolicyDecision":
         """Create a DENY decision."""
         return cls(
