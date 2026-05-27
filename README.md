@@ -2,16 +2,6 @@
 
 **Validation layer for AI agents with write access.**
 
-```python
-@boundary(policy=Policy.exact_match("status", "pending"))
-def update_record(data):
-    return db.update(data)
-```
-
-**ALLOWED** ✓ `{"status": "pending"}`  
-**BLOCKED** ✗ `{"status": "approved"}`  
-**AUDITED** → Every attempt logged
-
 ---
 
 ## The Problem
@@ -32,25 +22,22 @@ This happens in production. Repeatedly.
 
 ## The Solution
 
+![Execution Boundary Comparison](docs/execution-boundary-comparison.png)
+
 **Execution boundaries validate before execution.**
 
 ```python
 from execution_boundary import boundary, Policy
 
-policy = Policy.exact_match("status", "pending")
-
-@boundary(policy=policy, audit=True)
+@boundary(policy=Policy.exact_match("status", "pending"))
 def update_record(data):
     return db.update(data)
-
-# ✓ ALLOWED
-update_record({"status": "pending", "id": 123})
-
-# ✗ BLOCKED - BoundaryViolation raised
-update_record({"status": "pending_review", "id": 456})
 ```
 
-**Every attempt is logged. Invalid requests are blocked at the boundary.**
+**ALLOWED** ✓ `{"status": "pending"}`  
+**BLOCKED** ✗ `{"status": "approved"}`  
+**AUDITED** → Every attempt logged
+
 
 ---
 
