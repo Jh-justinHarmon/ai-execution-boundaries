@@ -1,77 +1,84 @@
-# Comparison Diagram Concept
+# Execution Boundary Architecture
 
-## Without Execution Boundaries
+## Prompt-Only Execution (Behavioral Suggestion)
 
 ```
-┌─────────────────────────────────────┐
-│ Prompt: "Only update pending"      │
-└─────────────┬───────────────────────┘
+       ┌─────────────┐
+       │   Prompt    │
+       └──────┬──────┘
               │
               ▼
-       ┌──────────────┐
-       │  LLM Agent   │
-       └──────┬───────┘
+       ┌─────────────┐
+       │  LLM Agent  │
+       └──────┬──────┘
               │
               ▼
-       ┌──────────────┐
-       │  Database    │
-       │  UPDATE      │
-       └──────────────┘
+       ┌─────────────┐
+       │  Database   │
+       │    Write    │
+       └──────┬──────┘
               │
               ▼
-    ✗ Wrong records updated
+         Silent Failure
+
     ✗ No validation
+    ✗ No enforcement
     ✗ No audit trail
-    ✗ Silent failure
+    ✗ Wrong records updated
 ```
 
-## With Execution Boundaries
+**Behavioral suggestion**
+
+---
+
+## Governed Execution (Deterministic Enforcement)
 
 ```
-┌─────────────────────────────────────┐
-│ Prompt: "Only update pending"      │
-└─────────────┬───────────────────────┘
+       ┌─────────────┐
+       │   Prompt    │
+       └──────┬──────┘
               │
               ▼
-       ┌──────────────┐
-       │  LLM Agent   │
-       └──────┬───────┘
+       ┌─────────────┐
+       │  LLM Agent  │
+       └──────┬──────┘
               │
               ▼
-    ╔═════════════════════════╗
-    ║  EXECUTION BOUNDARY     ║
-    ║                         ║
-    ║  @boundary(             ║
-    ║    policy=exact_match(  ║
-    ║      "status",          ║
-    ║      "pending"          ║
-    ║    )                    ║
-    ║  )                      ║
-    ╚═════════╦═══════════════╝
-              │
-              │ Validates:
-              │ status == "pending"?
-              │
-     ┌────────┴────────┐
-     │                 │
-     ▼                 ▼
-✓ ALLOWED        ✗ BLOCKED
-status="pending" status="approved"
-     │                 │
-     ▼                 │
-┌──────────┐           │
-│ Database │           │
-│ UPDATE   │           │
-└──────────┘           │
-     │                 │
-     ▼                 ▼
-✓ Correct        ✗ BoundaryViolation
-✓ Audited        ✗ Error raised
-                 ✓ Audited
+    ╔═══════════════════════╗
+    ║                       ║
+    ║  EXECUTION BOUNDARY   ║
+    ║                       ║
+    ║  • Policy Validation  ║
+    ║  • Authorization      ║
+    ║  • Audit Logging      ║
+    ║  • Refusal Logic      ║
+    ║                       ║
+    ╚═══════╦═══════════════╝
+            │
+            │
+    ┌───────┴────────┐
+    │                │
+    ▼                ▼
+ ALLOWED          BLOCKED
+    │                │
+    ▼                │
+┌──────────┐         │
+│ Database │         │
+│  Write   │         │
+└────┬─────┘         │
+     │               │
+     ▼               ▼
+✓ Validated    Execution blocked
+✓ Audited      Audit logged
+✓ Replayable   Error raised
 ```
+
+**Deterministic enforcement**
+
+---
 
 ## Key Difference
 
-**Without boundaries:** Prompt suggests, agent interprets, failures are silent
+**Prompt-only:** Agent interprets constraints → Silent failures
 
-**With boundaries:** Policy enforces, validation blocks, failures are explicit
+**Execution boundary:** Policy enforces constraints → Explicit blocking
