@@ -72,51 +72,64 @@ pip install -e .
 
 ## Quick Start
 
-**1. Define a policy:**
+**Async (recommended):**
 
 ```python
-from execution_boundary import Policy
+from execution_boundary import async_boundary, PolicyFactory, InMemoryBackend
 
-policy = Policy.exact_match("status", "pending")
+# Define policy and audit backend
+policy = PolicyFactory.exact_match("status", "pending")
+audit = InMemoryBackend()
+
+# Apply boundary to async function
+@async_boundary(policy=policy, audit_backend=audit)
+async def update_record(data):
+    return {"success": True, "data": data}
+
+# Execute
+await update_record({"status": "pending", "id": 1})  # ✓ Allowed
+await update_record({"status": "approved", "id": 2})  # ✗ Raises BoundaryViolation
 ```
 
-**2. Apply boundary to function:**
+**Sync:**
 
 ```python
-from execution_boundary import boundary
+from execution_boundary import boundary, Policy
 
-@boundary(policy=policy, audit=True)
+@boundary(policy=Policy.exact_match("status", "pending"), audit=True)
 def update_record(data):
     return {"success": True, "data": data}
-```
 
-**3. Execute:**
-
-```python
-# This works
-update_record({"status": "pending", "id": 1})
-
-# This raises BoundaryViolation
-update_record({"status": "approved", "id": 2})
+update_record({"status": "pending", "id": 1})  # ✓ Allowed
+update_record({"status": "approved", "id": 2})  # ✗ Raises BoundaryViolation
 ```
 
 ---
 
 ## Examples
 
-**See `examples/` directory:**
+**LangGraph Integration:**
 
+```python
+from langgraph.graph import StateGraph
+from langchain_core.tools import tool
+from execution_boundary import async_boundary, PolicyFactory, SQLiteBackend
+
+audit = SQLiteBackend("audit.db")
+policy = PolicyFactory.exact_match("status", "pending")
+
+@tool
+@async_boundary(policy=policy, audit_backend=audit)
+async def update_record(status: str, record_id: int) -> dict:
+    """Update a database record."""
+    return {"updated": True, "id": record_id, "status": status}
+```
+
+**See `examples/` for more:**
+- `langgraph_integration.py` - Full LangGraph agent example
 - `allowed.py` - Valid execution
 - `blocked.py` - Blocked execution
 - `audit.py` - Audit trail output
-
-**Run:**
-
-```bash
-python examples/allowed.py
-python examples/blocked.py
-python examples/audit.py
-```
 
 ---
 
