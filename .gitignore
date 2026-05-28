@@ -25,3 +25,6 @@ htmlcov/
 venv/
 ENV/
 .DS_Store
+
+# Audit databases from examples
+*.db

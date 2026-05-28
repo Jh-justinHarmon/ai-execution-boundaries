@@ -22,15 +22,15 @@ This happens in production. Repeatedly.
 
 ## The Solution
 
-![Execution Boundary Topology](docs/execution-boundary-topology.svg)
+![Execution Boundary Topology](docs/execution-boundary-topology.png)
 
 **Execution boundaries validate before execution.**
 
 **Flow:**
-1. Agent invokes tool call
+1. Agent invokes tool call (LLM Agent Runtime)
 2. Execution boundary evaluates policy
 3. Decision: ALLOW or DENY
-4. Audit logger records attempt
+4. Audit logger records attempt (both paths)
 5. Database executes (if allowed) or raises BoundaryViolation (if denied)
 
 ```python
